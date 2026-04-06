@@ -1,0 +1,507 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// ═══════════════════════════════════════════
+// AUTENTICAÇÃO (NextAuth v5)
+// ═══════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships OrgMember[]
+  ownedOrgs   Organization[] @relation("OrgOwner")
+  auditLogs   AuditLog[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model AllowedEmail {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════
+// ORGANIZATIONS (Multi-tenant)
+// ═══════════════════════════════════════════
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  logo      String?
+  phone     String?
+  address   String?
+  city      String?
+  country   String    @default("PT")
+  timezone  String    @default("Europe/Lisbon")
+  currency  String    @default("EUR")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Configuração do negócio (onboarding wizard)
+  businessType   BusinessType?
+  businessName   String?
+  openingHours   Json?
+  revenueModel   RevenueModel?
+  onboardingStep Int           @default(0)
+  onboardingDone Boolean       @default(false)
+
+  ownerId String
+  owner   User   @relation("OrgOwner", fields: [ownerId], references: [id])
+
+  members      OrgMember[]
+  subscription Subscription?
+  invites      Invite[]
+
+  // Módulos PetBiz
+  clients      Client[]
+  pets         Pet[]
+  appointments Appointment[]
+  services     Service[]
+  products     Product[]
+  transactions Transaction[]
+  resources    Resource[]
+  auditLogs    AuditLog[]
+
+  speciesServed OrgSpecies[]
+}
+
+model OrgSpecies {
+  id             String       @id @default(cuid())
+  species        Species
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, species])
+}
+
+model OrgMember {
+  id       String     @id @default(cuid())
+  role     MemberRole @default(COLLABORATOR)
+  joinedAt DateTime   @default(now())
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Invite {
+  id         String     @id @default(cuid())
+  email      String
+  role       MemberRole @default(COLLABORATOR)
+  token      String     @unique @default(cuid())
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// BILLING (Stripe)
+// ═══════════════════════════════════════════
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  stripeCustomerId       String?            @unique
+  stripeSubscriptionId   String?            @unique
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+  status                 SubscriptionStatus @default(FREE)
+  plan                   Plan               @default(FREE)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// CLIENTES (Tutores)
+// ═══════════════════════════════════════════
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  taxId     String?
+  address   String?
+  city      String?
+  notes     String?
+  tags      String[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  pets         Pet[]
+  appointments Appointment[]
+  transactions Transaction[]
+}
+
+// ═══════════════════════════════════════════
+// PETS
+// ═══════════════════════════════════════════
+
+model Pet {
+  id              String    @id @default(cuid())
+  name            String
+  species         Species
+  breed           String?
+  color           String?
+  weight          Float?
+  birthDate       DateTime?
+  gender          Gender?
+  microchipNumber String?
+  photo           String?
+  isNeutered      Boolean   @default(false)
+  isDeceased      Boolean   @default(false)
+
+  healthConditions String?
+  allergies        String?
+  medications      String?
+  feedingNotes     String?
+  behaviorNotes    String?
+  vetName          String?
+  vetPhone         String?
+  vetClinic        String?
+
+  vaccines Vaccine[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  appointments Appointment[]
+}
+
+model Vaccine {
+  id          String    @id @default(cuid())
+  name        String
+  date        DateTime
+  nextDueDate DateTime?
+  lotNumber   String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  petId String
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// SERVIÇOS
+// ═══════════════════════════════════════════
+
+model Service {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  duration    Int
+  price       Float
+  currency    String    @default("EUR")
+  isActive    Boolean   @default(true)
+  color       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+}
+
+// ═══════════════════════════════════════════
+// AGENDAMENTOS
+// ═══════════════════════════════════════════
+
+model Appointment {
+  id           String            @id @default(cuid())
+  title        String?
+  date         DateTime
+  endDate      DateTime
+  status       AppointmentStatus @default(PENDING)
+  notes        String?
+  price        Float?
+  isPaid       Boolean           @default(false)
+  isRecurring  Boolean           @default(false)
+  recurrence   String?
+  cancelReason String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  petId String?
+  pet   Pet?    @relation(fields: [petId], references: [id])
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+}
+
+// ═══════════════════════════════════════════
+// FINANCEIRO
+// ═══════════════════════════════════════════
+
+model Transaction {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  amount      Float
+  currency    String          @default("EUR")
+  description String?
+  method      PaymentMethod?
+  status      PaymentStatus   @default(PENDING)
+  date        DateTime        @default(now())
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// PRODUTOS
+// ═══════════════════════════════════════════
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  sku         String?
+  barcode     String?
+  price       Float
+  costPrice   Float?
+  currency    String    @default("EUR")
+  stock       Int       @default(0)
+  minStock    Int       @default(5)
+  unit        String?
+  photo       String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// BIBLIOTECA DE RECURSOS
+// ═══════════════════════════════════════════
+
+model Resource {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  type         ResourceType
+  category     String?
+  businessType BusinessType?
+  content      String?
+  fileUrl      String?
+  isPublic     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  COLLABORATOR
+  VET
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  TEAM
+}
+
+enum SubscriptionStatus {
+  FREE
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+enum BusinessType {
+  PET_SHOP
+  GROOMING
+  VET_CLINIC
+  PET_HOTEL
+  PET_SITTER
+  TRAINING
+  DELIVERY
+  MULTI
+}
+
+enum Species {
+  DOG
+  CAT
+  BIRD
+  RODENT
+  REPTILE
+  FISH
+  RABBIT
+  EXOTIC
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum RevenueModel {
+  PER_SERVICE
+  SUBSCRIPTION
+  PRODUCT
+  DELIVERY
+  HYBRID
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  REFUND
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  MBWAY
+  MULTIBANCO
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum ResourceType {
+  GUIDE
+  TEMPLATE
+  SOP
+  CHECKLIST
+  CALCULATOR
+}
