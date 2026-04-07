@@ -2,9 +2,8 @@ import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, ClipboardList, CheckSquare, Calculator, ExternalLink } from "lucide-react";
+import { BookOpen, FileText, ClipboardList, CheckSquare, Calculator } from "lucide-react";
+import { RecursosGrid } from "@/components/recursos/recursos-grid";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -24,14 +23,6 @@ const TYPE_LABELS: Record<string, string> = {
   SOP: "SOP",
   CHECKLIST: "Checklist",
   CALCULATOR: "Calculadora",
-};
-
-const TYPE_COLORS: Record<string, "brand" | "info" | "default" | "success" | "warning" | "danger" | "purple"> = {
-  GUIDE: "brand",
-  TEMPLATE: "info",
-  SOP: "purple",
-  CHECKLIST: "success",
-  CALCULATOR: "warning",
 };
 
 const BUILT_IN_RESOURCES = [
@@ -91,49 +82,7 @@ export default async function RecursosPage({ params }: PageProps) {
         </div>
 
         {/* Recursos por categoria */}
-        {categories.map((cat) => {
-          const resources = BUILT_IN_RESOURCES.filter((r) => r.category === cat);
-          return (
-            <div key={cat}>
-              <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--app-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px" }}>
-                {cat}
-              </p>
-              <div className="grid-3-cols" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-                {resources.map((resource) => {
-                  const Icon = TYPE_ICONS[resource.type] ?? BookOpen;
-                  return (
-                    <Card key={resource.id} className="card-hover">
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                        <div
-                          style={{ width: "36px", height: "36px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-sm)", background: "var(--brand-50)" }}
-                        >
-                          <Icon size={17} style={{ color: "var(--brand-600)" }} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ marginBottom: "6px" }}>
-                            <Badge variant={TYPE_COLORS[resource.type]}>
-                              {TYPE_LABELS[resource.type]}
-                            </Badge>
-                          </div>
-                          <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--app-text)", margin: "0 0 4px", lineHeight: 1.4 }}>
-                            {resource.title}
-                          </p>
-                          <p style={{ fontSize: "12px", color: "var(--app-text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
-                            {resource.description}
-                          </p>
-                          <button style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--brand-600)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                            <ExternalLink size={11} />
-                            Ver recurso
-                          </button>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        <RecursosGrid categories={categories} resources={BUILT_IN_RESOURCES} />
       </main>
     </div>
   );

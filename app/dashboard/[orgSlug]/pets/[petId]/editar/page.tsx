@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import Link from "next/link";
 
@@ -31,6 +31,7 @@ export default function EditarPetPage() {
   const petId = params.petId as string;
 
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -83,9 +84,31 @@ export default function EditarPetPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!confirm(`Eliminar o pet "${form.name}"? Esta acção não pode ser desfeita.`)) return;
+    setDeleting(true);
+    try {
+      await fetch(`/api/orgs/${orgSlug}/pets/${petId}`, { method: "DELETE" });
+      router.push(`/dashboard/${orgSlug}/pets`);
+    } catch {
+      setError("Erro ao eliminar. Tenta novamente.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <Topbar title="Editar pet" orgSlug={orgSlug} />
+      <Topbar
+        title="Editar pet"
+        orgSlug={orgSlug}
+        actions={
+          !fetching ? (
+            <Button variant="danger" onClick={handleDelete} loading={deleting}>
+              <Trash2 size={14} /> Eliminar pet
+            </Button>
+          ) : undefined
+        }
+      />
       <main style={{ flex: 1, padding: "20px 28px" }}>
         <div style={{ marginBottom: "20px" }}>
           <Breadcrumbs items={[

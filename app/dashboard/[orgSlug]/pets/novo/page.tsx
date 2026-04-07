@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
 import { Card } from "@/components/ui/card";
@@ -38,6 +38,7 @@ export default function NovoPetPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [clients, setClients] = useState<{ value: string; label: string }[]>([]);
   const [form, setForm] = useState({
     name: "", species: "", breed: "", color: "", weight: "", birthDate: "",
     gender: "", microchipNumber: "", isNeutered: false,
@@ -45,6 +46,17 @@ export default function NovoPetPage() {
     vetName: "", vetPhone: "", vetClinic: "",
     clientId: presetClientId,
   });
+
+  useEffect(() => {
+    if (presetClientId) return;
+    fetch(`/api/orgs/${orgSlug}/clientes?limit=200`)
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.clients ?? []);
+        setClients(list.map((c: { id: string; name: string }) => ({ value: c.id, label: c.name })));
+      })
+      .catch(() => {});
+  }, [orgSlug, presetClientId]);
 
   function update(field: string, value: string | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -107,7 +119,16 @@ export default function NovoPetPage() {
                 Castrado/a
               </label>
               {!presetClientId && (
-                <Input label="ID do tutor" value={form.clientId} onChange={(e) => update("clientId", e.target.value)} required placeholder="ID do cliente (da ficha do cliente)" hint="Podes copiar o ID na ficha do cliente" />
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Select
+                    label="Tutor"
+                    options={clients}
+                    placeholder={clients.length === 0 ? "A carregar clientes..." : "Seleccionar tutor"}
+                    value={form.clientId}
+                    onChange={(e) => update("clientId", e.target.value)}
+                    required
+                  />
+                </div>
               )}
             </div>
           </Card>

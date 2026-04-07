@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import Link from "next/link";
 
@@ -18,6 +18,7 @@ export default function EditarClientePage() {
   const clientId = params.clientId as string;
 
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", email: "", phone: "", taxId: "", address: "", city: "", notes: "" });
@@ -55,9 +56,31 @@ export default function EditarClientePage() {
     }
   }
 
+  async function handleDelete() {
+    if (!confirm(`Eliminar o cliente "${form.name}"? Esta acção não pode ser desfeita.`)) return;
+    setDeleting(true);
+    try {
+      await fetch(`/api/orgs/${orgSlug}/clientes/${clientId}`, { method: "DELETE" });
+      router.push(`/dashboard/${orgSlug}/clientes`);
+    } catch {
+      setError("Erro ao eliminar. Tenta novamente.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <Topbar title={fetching ? "Editar cliente" : `Editar — ${form.name}`} orgSlug={orgSlug} />
+      <Topbar
+        title={fetching ? "Editar cliente" : `Editar — ${form.name}`}
+        orgSlug={orgSlug}
+        actions={
+          !fetching ? (
+            <Button variant="danger" onClick={handleDelete} loading={deleting}>
+              <Trash2 size={14} /> Eliminar cliente
+            </Button>
+          ) : undefined
+        }
+      />
       <main style={{ flex: 1, padding: "20px 28px" }}>
         <div style={{ marginBottom: "20px" }}>
           <Breadcrumbs items={[
