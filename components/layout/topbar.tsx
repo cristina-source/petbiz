@@ -96,10 +96,11 @@ export function Topbar({ title, onMenuClick, actions, orgSlug }: TopbarProps) {
             borderRadius: "8px", border: "1px solid var(--border)", background: "var(--gray-50)",
             color: "var(--app-text-muted)", fontSize: "12px", cursor: "pointer",
           }}
+          title="Pesquisar (⌘K)"
         >
           <Search size={12} />
-          <span>Pesquisar</span>
-          <kbd style={{ fontSize: "10px", background: "var(--gray-200)", borderRadius: "4px", padding: "1px 4px", fontFamily: "monospace" }}>⌘K</kbd>
+          <span className="hide-mobile">Pesquisar</span>
+          <kbd className="hide-mobile" style={{ fontSize: "10px", background: "var(--gray-200)", borderRadius: "4px", padding: "1px 4px", fontFamily: "monospace" }}>⌘K</kbd>
         </button>
 
         {/* Notification bell */}

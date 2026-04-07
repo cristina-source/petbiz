@@ -16,15 +16,17 @@ export default async function DashboardLayout({
 
   const org = await prisma.organization.findFirst({
     where: { slug: orgSlug, deletedAt: null, members: { some: { userId: session.user.id } } },
-    select: { name: true, businessName: true },
+    select: { name: true, businessName: true, subscription: { select: { plan: true, status: true } } },
   });
   if (!org) redirect("/onboarding");
+
+  const plan = org.subscription?.plan ?? "FREE";
 
   return (
     <DashboardLayoutClient
       orgSlug={orgSlug}
       orgName={org.businessName ?? org.name}
-      plan="FREE"
+      plan={plan}
       userName={session.user.name ?? undefined}
     >
       {children}

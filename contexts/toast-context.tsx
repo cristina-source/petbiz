@@ -25,7 +25,7 @@ const ICONS: Record<ToastVariant, React.ReactNode> = {
 };
 
 const COLORS: Record<ToastVariant, { bg: string; border: string; icon: string; text: string }> = {
-  success: { bg: "#eff6ff", border: "#93c5fd", icon: "#1d4ed8", text: "#1e3a5f" },
+  success: { bg: "#f0fdf4", border: "#86efac", icon: "#16a34a", text: "#14532d" },
   error: { bg: "#fef2f2", border: "#fecaca", icon: "#dc2626", text: "#991b1b" },
   warning: { bg: "#fffbeb", border: "#fde68a", icon: "#d97706", text: "#92400e" },
   info: { bg: "#eff6ff", border: "#bfdbfe", icon: "#2563eb", text: "#1e40af" },

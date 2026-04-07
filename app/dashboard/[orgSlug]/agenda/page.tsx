@@ -2,7 +2,8 @@ import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
-import { SPECIES_EMOJI } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { SPECIES_EMOJI, APPOINTMENT_STATUS_LABELS } from "@/lib/utils";
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { AppointmentStatusActions } from "@/components/agenda/appointment-status-actions";
 import Link from "next/link";
@@ -17,6 +18,16 @@ interface PageProps {
 }
 
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8h–20h
+
+// Map appointment status to a left-bar color when service has no colour defined
+const STATUS_BAR_COLOR: Record<string, string> = {
+  PENDING:     "#f59e0b",
+  CONFIRMED:   "#3b82f6",
+  IN_PROGRESS: "#8b5cf6",
+  COMPLETED:   "#10b981",
+  CANCELLED:   "#d1d5db",
+  NO_SHOW:     "#ef4444",
+};
 
 export default async function AgendaPage({ params, searchParams }: PageProps) {
   const { orgSlug } = await params;
@@ -338,13 +349,13 @@ export default async function AgendaPage({ params, searchParams }: PageProps) {
                     )}
                   </div>
 
-                  {/* Colored bar */}
+                  {/* Colored bar — service colour first, fallback to status colour */}
                   <div
                     style={{
                       width: "3px",
                       height: "44px",
                       borderRadius: "2px",
-                      background: appt.service?.color ?? "var(--brand-400)",
+                      background: appt.service?.color ?? STATUS_BAR_COLOR[appt.status] ?? "var(--brand-400)",
                       flexShrink: 0,
                     }}
                   />
@@ -367,6 +378,7 @@ export default async function AgendaPage({ params, searchParams }: PageProps) {
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Badge status={appt.status}>{APPOINTMENT_STATUS_LABELS[appt.status] ?? appt.status}</Badge>
                     <Link
                       href={`/dashboard/${orgSlug}/agenda/${appt.id}/editar`}
                       style={{

@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { formatCurrency, formatDate, SPECIES_EMOJI } from "@/lib/utils";
+import { formatCurrency, formatDate, SPECIES_EMOJI, APPOINTMENT_STATUS_LABELS } from "@/lib/utils";
 import { StatCard } from "@/components/shared/stat-card";
 import { RevenueChart } from "@/components/shared/revenue-chart";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,9 +32,9 @@ const ENTITY_PT: Record<string, string> = {
   Organization: "organização", Vaccine: "vacina",
 };
 
-const STATUS_PT: Record<string, string> = {
-  PENDING: "Pendente", CONFIRMED: "Confirmado", IN_PROGRESS: "Em curso",
-  COMPLETED: "Concluído", CANCELLED: "Cancelado", NO_SHOW: "Não compareceu",
+const STATUS_BAR_COLOR: Record<string, string> = {
+  PENDING: "#f59e0b", CONFIRMED: "#3b82f6", IN_PROGRESS: "#8b5cf6",
+  COMPLETED: "#10b981", CANCELLED: "#d1d5db", NO_SHOW: "#ef4444",
 };
 
 export default async function DashboardPage({ params }: PageProps) {
@@ -201,7 +201,6 @@ export default async function DashboardPage({ params }: PageProps) {
 
       {/* [ITERATE v3] — Substituído header manual pelo Topbar padrão com orgSlug */}
       <Topbar
-        title={`Olá, ${userName}!`}
         orgSlug={orgSlug}
         actions={
           <Link
@@ -226,6 +225,16 @@ export default async function DashboardPage({ params }: PageProps) {
       />
 
       <main style={{ flex: 1, padding: "24px 28px", display: "flex", flexDirection: "column", gap: "24px" }}>
+
+        {/* Greeting header */}
+        <div className="stagger-1">
+          <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--app-text)", margin: "0 0 2px", letterSpacing: "-0.01em" }}>
+            {now.getHours() < 12 ? "Bom dia" : now.getHours() < 18 ? "Boa tarde" : "Boa noite"}, {userName}!
+          </h2>
+          <p style={{ fontSize: "13px", color: "var(--app-text-muted)", margin: 0, textTransform: "capitalize" }}>
+            {todayFormatted}
+          </p>
+        </div>
 
         {/* Alert: marcações pendentes */}
         {pendingAppointments > 0 && (
@@ -256,7 +265,7 @@ export default async function DashboardPage({ params }: PageProps) {
 
         {/* KPI cards */}
         <div
-          className="grid-4-cols stagger-1"
+          className="grid-4-cols stagger-2"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
@@ -586,7 +595,7 @@ export default async function DashboardPage({ params }: PageProps) {
                         width: "3px",
                         height: "40px",
                         borderRadius: "2px",
-                        background: appt.service?.color ?? "var(--brand-400)",
+                        background: appt.service?.color ?? STATUS_BAR_COLOR[appt.status] ?? "var(--brand-400)",
                         flexShrink: 0,
                       }}
                     />
@@ -616,7 +625,7 @@ export default async function DashboardPage({ params }: PageProps) {
                         })}
                       </p>
                     </div>
-                    <Badge status={appt.status}>{STATUS_PT[appt.status] ?? appt.status}</Badge>
+                    <Badge status={appt.status}>{APPOINTMENT_STATUS_LABELS[appt.status] ?? appt.status}</Badge>
                   </div>
                 ))}
               </div>

@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://petbiz.pt";
 
@@ -71,7 +78,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt" className="h-full">
+    <html lang="pt" className={`h-full ${inter.variable}`}>
       <body className="h-full">{children}</body>
     </html>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 
@@ -7,11 +8,11 @@ interface EmptyStateProps {
   description: string;
   action?: {
     label: string;
-    onClick: () => void;
+    href?: string;
+    onClick?: () => void;
   };
 }
 
-// [ITERATE v3] — Convertido de Tailwind para inline styles
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "64px 24px", textAlign: "center" }}>
@@ -27,9 +28,23 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
         {description}
       </p>
       {action && (
-        <Button onClick={action.onClick} size="md">
-          {action.label}
-        </Button>
+        action.href ? (
+          <Link
+            href={action.href}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              height: "38px", padding: "0 16px", borderRadius: "8px",
+              background: "var(--brand-600)", color: "white",
+              fontSize: "14px", fontWeight: 600, textDecoration: "none",
+            }}
+          >
+            {action.label}
+          </Link>
+        ) : (
+          <Button onClick={action.onClick} size="md">
+            {action.label}
+          </Button>
+        )
       )}
     </div>
   );
