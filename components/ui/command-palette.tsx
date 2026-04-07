@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search, LayoutDashboard, Users, CalendarDays, DollarSign,
@@ -27,7 +27,7 @@ export function CommandPalette({ orgSlug }: CommandPaletteProps) {
   const router = useRouter();
   const base = `/dashboard/${orgSlug}`;
 
-  const items: CommandItem[] = [
+  const items: CommandItem[] = useMemo(() => [
     // Navegação
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={15} />, action: () => router.push(base), group: "Navegar" },
     { id: "clientes", label: "Clientes", icon: <Users size={15} />, action: () => router.push(`${base}/clientes`), group: "Navegar" },
@@ -44,23 +44,28 @@ export function CommandPalette({ orgSlug }: CommandPaletteProps) {
     // Exportar
     { id: "export-clientes", label: "Exportar clientes", description: "Descarregar CSV", icon: <Download size={15} />, action: () => { window.location.href = `/api/orgs/${orgSlug}/clientes/export`; }, group: "Exportar" },
     { id: "export-financeiro", label: "Exportar financeiro", description: "Descarregar CSV", icon: <Download size={15} />, action: () => { window.location.href = `/api/orgs/${orgSlug}/transactions/export`; }, group: "Exportar" },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [base, orgSlug]);
 
-  const filtered = query
-    ? items.filter((i) =>
-        i.label.toLowerCase().includes(query.toLowerCase()) ||
-        i.description?.toLowerCase().includes(query.toLowerCase()) ||
-        i.group.toLowerCase().includes(query.toLowerCase())
-      )
-    : items;
+  const filtered = useMemo(
+    () =>
+      query
+        ? items.filter((i) =>
+            i.label.toLowerCase().includes(query.toLowerCase()) ||
+            i.description?.toLowerCase().includes(query.toLowerCase()) ||
+            i.group.toLowerCase().includes(query.toLowerCase())
+          )
+        : items,
+    [items, query]
+  );
 
-  const grouped = filtered.reduce<Record<string, CommandItem[]>>((acc, item) => {
+  const grouped = useMemo(() => filtered.reduce<Record<string, CommandItem[]>>((acc, item) => {
     if (!acc[item.group]) acc[item.group] = [];
     acc[item.group].push(item);
     return acc;
-  }, {});
+  }, {}), [filtered]);
 
-  const flatFiltered = Object.values(grouped).flat();
+  const flatFiltered = useMemo(() => Object.values(grouped).flat(), [grouped]);
 
   const close = useCallback(() => {
     setOpen(false);
